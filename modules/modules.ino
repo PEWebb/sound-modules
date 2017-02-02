@@ -175,10 +175,10 @@ void loop() {
   flange1.voices(s_idx, s_depth, mappedFlex);
   
   // Debugging print statements
-  Serial.print("sensor: ");
-  Serial.print(flexposition);
-  Serial.print("  ");
-  Serial.println(mappedFlex);
+//  Serial.print("sensor: ");
+//  Serial.print(flexposition);
+//  Serial.print("  ");
+//  Serial.println(mappedFlex);
 
   // Update data array
   update_array(data, mappedFlex);
@@ -224,7 +224,8 @@ void loop() {
   }
 
   // Update LED state
-  digitalWrite(ledPin, ledState); // updates LED
+  Serial.println(mode);
+//  digitalWrite(ledPin, ledState); // updates LED
 
 }
 
