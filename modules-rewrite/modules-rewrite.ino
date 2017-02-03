@@ -3,7 +3,7 @@
 // 2/2/2017
 
 // Adapted from code by by PaulStoffregen: 
-// https://github.com/PaulStoffregen/Audio/blob/master/examples/Recorder/Recorder.ino#L181
+// https://github.com/PaulStoffregen/Audio/blob/master/examples/Recorder/Recorder.ino
 
 #include <Audio.h>
 #include <Wire.h>
@@ -31,10 +31,10 @@ AudioControlSGTL5000     sgtl5000_1;     //xy=408,471.3333148956299
 #define FLANGE_DELAY_LENGTH (12*AUDIO_BLOCK_SAMPLES)
 int s_idx = 3*FLANGE_DELAY_LENGTH/4;
 int s_depth = FLANGE_DELAY_LENGTH/8;
-double s_freq = 0;
+double s_freq = 0.5;
 short delayline[FLANGE_DELAY_LENGTH];
 
-const int flexpin = 0;
+const int flexpin = 2;
 
 // Bounce objects to easily and reliably read the buttons
 Bounce buttonRecord = Bounce(0, 8);
@@ -86,8 +86,8 @@ void loop() {
   buttonPlay.update();
 
   int flexposition = analogRead(flexpin);
-  double mappedFlexUncap = map(flexposition, 3, 30, 0, 10);
-  double mappedFlex = constrain(mappedFlexUncap,0,10)/10;
+  double mappedFlexUncap = map(flexposition, 100, 1000, 0, 100);
+  double mappedFlex = constrain(mappedFlexUncap,0,100)/10.0;
 
   Serial.print("Flex: ");
   Serial.print(flexposition);
@@ -98,17 +98,26 @@ void loop() {
   flangeEffect.voices(s_idx, s_depth, mappedFlex);
 
   // Respond to button presses
+
+  // Record button is pressed down
   if (buttonRecord.fallingEdge()) {
     Serial.println("Record Button Press");
 
     // If currently playing something: stop
     if (mode == 2) stopPlaying();
 
-    // If currently recording: stop
-    if (mode == 1) stopRecording();
-
     // Else (idle): start recording
     else if (mode == 0) startRecording();
+  }
+  // Record button is released
+  else if (buttonRecord.risingEdge()) {
+    Serial.println("Record Button Release");
+
+    // If currently playing something: stop
+    if (mode == 2) stopPlaying();
+
+    // If currently recording: stop
+    if (mode == 1) stopRecording();
   }
 
   if (buttonPlay.fallingEdge()) {
