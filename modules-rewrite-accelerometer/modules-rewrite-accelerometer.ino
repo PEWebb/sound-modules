@@ -11,6 +11,10 @@
 #include <SD.h>
 #include <SerialFlash.h>
 #include <Bounce.h>
+#include <SparkFun_MMA8452Q.h> // Includes the SFE_MMA8452Q library
+
+// Begin using the library by creating an instance of the MMA8452Q
+MMA8452Q accel;
 
 // GUItool: begin automatically generated code
 AudioInputI2S            i2sIn;           //xy=173.1999969482422,160.1999969482422
@@ -37,8 +41,8 @@ short delayline[FLANGE_DELAY_LENGTH];
 const int flexpin = 2;
 
 // Bounce objects to easily and reliably read the buttons
-Bounce buttonRecord = Bounce(0, 8);
-Bounce buttonPlay   = Bounce(1, 8);  // 8 = 8 ms debounce time
+Bounce buttonRecord = Bounce(2, 8);
+Bounce buttonPlay   = Bounce(3, 8);  // 8 = 8 ms debounce time
 
 // Which is the input medium
 //const int myInput = AUDIO_INPUT_LINEIN;
@@ -52,8 +56,8 @@ File fRec;
 
 void setup() {
   // Configure the pushbutton pins
-  pinMode(0, INPUT_PULLUP);
-  pinMode(1, INPUT_PULLUP);
+  pinMode(2, INPUT_PULLUP);
+  pinMode(3, INPUT_PULLUP);
 
   // Audio connections require memory, and the record queue
   // uses this memory to buffer incoming audio.
@@ -62,10 +66,13 @@ void setup() {
   // Enable the audio shield, select input, and enable output
   sgtl5000_1.enable();
   sgtl5000_1.inputSelect(myInput);
-  sgtl5000_1.volume(1.0);
+  sgtl5000_1.volume(1);
 
   // Initialize flange
   flangeEffect.begin(delayline, FLANGE_DELAY_LENGTH, s_idx, s_depth, s_freq);
+
+  // Initialize accelerometer
+  accel.init();
   
 
   // Initialize the SD card
@@ -78,30 +85,47 @@ void setup() {
       delay(500);
     }
   }
+
+  Serial.println("Succesful Initialization");
 }
 
 void loop() {
+  Serial.println("New step");
   // First, read the buttons
   buttonRecord.update();
   buttonPlay.update();
 
-  int flexposition = analogRead(flexpin);
-  double mappedFlexUncap = map(flexposition, 100, 1000, 0, 100);
-  double mappedFlex = constrain(mappedFlexUncap,0,100)/10.0;
+  // Use the accel.available() function to wait for new data
+  //  from the accelerometer.
+  /*if (accel.available())
+  {
+    // First, use accel.read() to read the new variables:
+    accel.read();
+    
+//    printCalculatedAccels();
+    //printAccels(); // Uncomment to print digital readings
+    
+//    Serial.println(); // Print new line every time.
+  }*/
 
+//  int flexposition = analogRead(flexpin);
+//  double mappedFlexUncap = map(flexposition, 100, 1000, 0, 100);
+//  double mappedFlex = constrain(mappedFlexUncap,0,100)/10.0;
+//
 //  Serial.print("Flex: ");
 //  Serial.print(flexposition);
 //  Serial.print(", Mapped: ");
 //  Serial.print(mappedFlex);
 //  Serial.print("\n");
-  Serial.println(mode);
 
-  flangeEffect.voices(s_idx, s_depth, mappedFlex);
+  double mappedFlex = 1;
+
+//  flangeEffect.voices(s_idx, s_depth, mappedFlex);
 
   // Respond to button presses
 
   // Record button is pressed down
-  if (buttonRecord.fallingEdge()) {
+  if (buttonRecord.risingEdge()) {
     Serial.println("Record Button Press");
 
     // If currently playing something: stop
@@ -111,7 +135,7 @@ void loop() {
     else if (mode == 0) startRecording();
   }
   // Record button is released
-  else if (buttonRecord.risingEdge()) {
+  else if (buttonRecord.fallingEdge()) {
     Serial.println("Record Button Release");
 
     // If currently playing something: stop
@@ -120,11 +144,17 @@ void loop() {
     // If currently recording: stop
     if (mode == 1) stopRecording();
   }
+  else {
+    Serial.println("Record Button Depressed");
+  }
 
-  if (buttonPlay.fallingEdge()) {
+  if (buttonPlay.risingEdge()) {
     Serial.println("Play Button Press");
     if (mode == 1) stopRecording();
     if (mode == 0) startPlaying();
+  }
+  else {
+    Serial.println("Play Button Depressed");
   }
 
   // If we're playing or recording, carry on...
@@ -216,4 +246,19 @@ void stopPlaying() {
   if (mode == 2)
     playSdRawFile.stop();
   mode = 0;
+}
+
+
+// This function demonstrates how to use the accel.cx, accel.cy,
+//  and accel.cz variables.
+// Before using these variables you must call the accel.read()
+//  function!
+void printCalculatedAccels()
+{ 
+  Serial.print(accel.cx, 3);
+  Serial.print("\t");
+  Serial.print(accel.cy, 3);
+  Serial.print("\t");
+  Serial.print(accel.cz, 3);
+  Serial.print("\t");
 }
