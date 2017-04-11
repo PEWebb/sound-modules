@@ -111,26 +111,44 @@ void AudioAnalyzeFFT256::update(void)
 		prevblocks[0] = block;
 		return;
 	}
-	if (count == 0) {
-		count = 1;
-		copy_to_fft_buffer(buffer, prevblocks[2]->data);
-		copy_to_fft_buffer(buffer+128, prevblocks[1]->data);
-		copy_to_fft_buffer(buffer+256, prevblocks[1]->data);
-		copy_to_fft_buffer(buffer+384, block->data);
-		if (window) apply_window_to_fft_buffer(buffer, window);
-		arm_cfft_radix4_q15(&fft_inst, buffer);
+	copy_to_fft_buffer(buffer, prevblocks[2]->data);
+	copy_to_fft_buffer(buffer+128, prevblocks[1]->data);
+	copy_to_fft_buffer(buffer+256, prevblocks[1]->data);
+	copy_to_fft_buffer(buffer+384, block->data);
+	if (window) apply_window_to_fft_buffer(buffer, window);
+	arm_cfft_radix4_q15(&fft_inst, buffer);
+
+	// Untangle fft of both signals and calculate conj(fft(s1)) * fft(s2)
+	// Treat DC point special
+	int16_t fs1_re, fs1_im, fs2_re, fs2_im;
+	fs1_re = buffer[0]; // fs1_im = 0
+	fs2_re = buffer[0]; // fs2_im = 0
+	ifft_buf[0] = fs1_re * fs2_re;
+	ifft_buf[1] = 0;
+	
+	// Then handle most other points
+	int16_t *fft_fwd = buffer + 2;
+	int16_t *fft_rev = buffer + 2 * (255);
+	for (size_t i = 2; i < 256; i += 2, fft_fwd += 2, fft_rev -= 2) {
+		fs1_re = (fft_fwd[0] + fft_rev[0]) >> 1;
+		fs1_im = (fft_fwd[1] - fft_rev[1]) >> 1;
+		fs2_re = (fft_rev[1] + fft_fwd[1]) >> 1;
+		fs2_im = (fft_rev[0] - fft_fwd[0]) >> 1;
 		
-		
-	} else {
-		count = 2;
-		const uint32_t *p = (uint32_t *)buffer;
-		for (int i=0; i < 128; i++) {
-			uint32_t tmp = *p++;
-			int16_t v1 = tmp & 0xFFFF;
-			int16_t v2 = tmp >> 16;
-			output[i] = sqrt_uint32_approx(v1 * v1 + v2 * v2);
-		}
+		// calculate conj(fft(s1)) * fft(s2)
+		int32_t cfs1_fs2_re = (fs1_re * fs2_re + fs1_im * fs2_im);
+		int32_t cfs1_fs2_im = (fs1_re * fs2_im - fs1_im * fs2_re);
+		ifft_buf[i] = ifft_buf[2 * 256 - i] = cfs1_fs2_re;
+		ifft_buf[i + 1] = cfs1_fs2_im;
+		ifft_buf[2 * 256 - i + 1] = -cfs1_fs2_im;
 	}
+	
+	// Finally handle Nyquist point
+	fs1_re = fft_fwd[0]; // fs1_im = 0
+	fs2_re = fft_fwd[1]; // fs2_im = 0
+	ifft_buf[256] = fs1_re * fs2_re;
+	ifft_buf[256 + 1] = 0;
+	
 	release(prevblocks[2]);
 	prevblocks[2] = prevblocks[1];
 	prevblocks[1] = prevblocks[0];
