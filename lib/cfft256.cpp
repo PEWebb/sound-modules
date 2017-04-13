@@ -24,7 +24,7 @@
  * THE SOFTWARE.
  */
 
-#include "analyze_fft256.h"
+#include "cfft256.h"
 #include "sqrt_integer.h"
 #include "utility/dspinst.h"
 
@@ -53,7 +53,7 @@ static void apply_window_to_fft_buffer(void *buffer, const void *window)
 	}
 }
 
-void AudioAnalyzeFFT256::update(void)
+void AudioCFFT256::update(void)
 {
 	audio_block_t *block;
 

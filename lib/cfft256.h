@@ -24,8 +24,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef analyze_fft256_h_
-#define analyze_fft256_h_
+#ifndef cfft256_h_
+#define cfft256_h_
 
 #include "Arduino.h"
 #include "AudioStream.h"
@@ -46,10 +46,10 @@ extern const int16_t AudioWindowCosine256[];
 extern const int16_t AudioWindowTukey256[];
 }
 
-class AudioAnalyzeFFT256 : public AudioStream
+class AudioCFFT256 : public AudioStream
 {
 public:
-	AudioAnalyzeFFT256() : AudioStream(1, inputQueueArray),
+	AudioCFFT256() : AudioStream(1, inputQueueArray),
 	  window(AudioWindowHanning256), count(0), outputflag(false) {
 		arm_cfft_radix4_init_q15(&fft_inst, 256, 0, 1);
 #if AUDIO_BLOCK_SAMPLES == 128
