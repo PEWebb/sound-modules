@@ -2,6 +2,7 @@
 #include <Wire.h>
 #include <SD.h>
 #include <SPI.h>
+#include <cfft256.h>
 
 const int myInput = AUDIO_INPUT_LINEIN;
 //const int myInput = AUDIO_INPUT_MIC;
@@ -10,12 +11,12 @@ const int myInput = AUDIO_INPUT_LINEIN;
 // order data flows, inputs/sources -> processing -> outputs
 //
 AudioInputI2S        audioInput;         // audio shield: mic or line-in
-AudioPlaySdRaw       playSdRawFile;
-AudioCFFT256         cfft(11);
+AudioPlaySdWav       playSdWavFile;
+AudioCFFT256         cfft;
 AudioOutputI2S       audioOutput;        // audio shield: headphones & line-out
 
 // Create Audio connections between the components
-AudioConnection c1(playSdRawFile, 0, cfft, 0);
+AudioConnection c1(playSdWavFile, 0, cfft, 0);
 
 // Create an object to control the audio shield.
 AudioControlSGTL5000 audioShield;
@@ -40,10 +41,13 @@ void setup() {
       delay(500);
     }
   }
+
+  startPlaying();
 }
 
 void loop() {
   if (cfft.available()) {
+    Serial.println("CFFT Availible");
     for(int i = 0; i < 512; i++) {
       Serial.print(cfft.ifft_buf[i]);
     }
@@ -51,4 +55,7 @@ void loop() {
   }
 }
 
-
+void startPlaying() {
+  Serial.println("startPlaying");
+  playSdWavFile.play("river16.wav");
+}
