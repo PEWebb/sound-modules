@@ -17,6 +17,7 @@ AudioOutputI2S       audioOutput;        // audio shield: headphones & line-out
 
 // Create Audio connections between the components
 AudioConnection c1(playSdWavFile, 0, cfft, 0);
+AudioConnection c2(cfft, 0, audioOutput, 0);
 
 // Create an object to control the audio shield.
 AudioControlSGTL5000 audioShield;
@@ -47,9 +48,15 @@ void setup() {
 
 void loop() {
   if (cfft.available()) {
-    Serial.println("CFFT Availible");
-    for(int i = 0; i < 512; i++) {
-      Serial.print(cfft.ifft_buf[i]);
+//    Serial.println("CFFT Availible");
+    for(int i = 0; i < 40; i++) {
+      int n = cfft.readCfft(i);
+      if (n >= 0.01) {
+        Serial.print(n);
+        Serial.print(" ");
+      } else {
+        Serial.print("  -  "); // don't print "0.00"
+      }
     }
     Serial.println();
   }

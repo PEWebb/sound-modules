@@ -31,8 +31,6 @@
 #include "AudioStream.h"
 #include "arm_math.h"
 
-#define FFTSIZE 256
-
 // windows.c
 extern "C" {
 extern const int16_t AudioWindowHanning256[];
@@ -53,9 +51,7 @@ class AudioCFFT256 : public AudioStream
 public:
 	AudioCFFT256() : AudioStream(1, inputQueueArray),
 	  window(AudioWindowHanning256), count(0), outputflag(false) {
-		arm_cfft_radix4_init_q15(&fft_inst, FFTSIZE, 0, 1);
-		arm_cfft_radix4_init_q31(&ifft_inst, FFTSIZE, 1, 1);
-
+		arm_cfft_radix4_init_q15(&fft_inst, 256, 0, 1);
 #if AUDIO_BLOCK_SAMPLES == 128
 		prevblock = NULL;
 		naverage = 8;
@@ -114,7 +110,7 @@ private:
 #elif AUDIO_BLOCK_SAMPLES == 64
 	audio_block_t *prevblocks[3];
 #endif
-	int16_t buffer[2*FFTSIZE], ifft_buf[2*FFTSIZE] __attribute__ ((aligned (4)));
+	int16_t buffer[512], ifft_buf[512] __attribute__ ((aligned (4)));
 #if AUDIO_BLOCK_SAMPLES == 128
 	uint32_t sum[128];
 	uint8_t naverage;
