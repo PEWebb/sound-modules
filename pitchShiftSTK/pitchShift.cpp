@@ -15,7 +15,7 @@
 
 #include "stk/FileWvIn.h"
 #include "stk/RtAudio.h"
-#include "stk/PitShift.h"
+#include "stk/LentPitShift.h"
 
 #include <signal.h>
 #include <iostream>
@@ -26,7 +26,7 @@ using namespace stk;
 // Eewww ... global variables! :-)
 bool done;
 StkFrames frames;
-PitShift shifter;
+LentPitShift shifter;
 static void finish(int ignore){ done = true; }
 
 // This tick() function handles sample computation only.  It will be
@@ -37,14 +37,19 @@ int tick( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
 {
   FileWvIn *input = (FileWvIn *) userData;
   register StkFloat *samples = (StkFloat *) outputBuffer;
-  register StkFloat rSamples;
+  // register StkFloat rSamples;
 
-  input->tick( frames );
+  input->tick(frames);
+  // shifter.tick(frames);
+
+  for (unsigned int i = 0; i < frames.channels(); i++) {
+  //   input->tick(frames, i);
+    shifter.tick(frames, i);
+  }
   
   for ( unsigned int i=0; i<frames.size(); i++ ) {
-    rSamples = frames[i];
-    *samples++ = shifter.tick( rSamples );
-
+    *samples++ = frames[i];
+    if ( input->channelsOut() == 1 ) *samples++ = frames[i]; // play mono files in stereo
   }
   
   if ( input->isFinished() ) {
@@ -81,7 +86,7 @@ int main(int argc, char *argv[])
   // Find out how many channels we have.
   int channels = input.channelsOut();
 
-  shifter.setShift(5.0);
+  shifter.setShift(2.0);
 
   // Figure out how many bytes in an StkFloat and setup the RtAudio stream.
   RtAudio::StreamParameters parameters;
