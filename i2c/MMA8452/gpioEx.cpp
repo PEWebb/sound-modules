@@ -15,7 +15,7 @@ void main()
         exit(1);
     }
     
-    // Get I2C device, MMA8451 I2C address is dx10(1d)
+    // Get I2C device, MMA8452 I2C address is dx10(1d)
     int addr = dx10;
     if(ioctl(file, I2C_SLAVE, addr) < 0) {
         printf("Failed to connect to I2C device. \n");
