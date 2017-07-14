@@ -1,11 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <linus/i2c-dev.h>
+#include <linux/i2c-dev.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <unistd.h>
 
-void main()
+int main()
 {
     // Create I2C bus
     int file;
@@ -16,12 +16,15 @@ void main()
     }
     
     // Get I2C device, MMA8452 I2C address is dx10(1d)
-    int addr = dx10;
+    int addr = 0x1d;
     if(ioctl(file, I2C_SLAVE, addr) < 0) {
         printf("Failed to connect to I2C device. \n");
     }
 
+    for(;;){
     // Read data from I2C
+    char reg[1] = {0x00};
+    write(file, reg, 1);
     int length = 7;
     char data[7] = {0};
     if (read(file, data, length) != length) {
@@ -42,9 +45,9 @@ void main()
             zAccl -= 4096;
         }
 
-        printf("Acceleration in X-Axis : %d \n", xAccl);
-        printf("Acceleration in Y-Axis : %d \n", yAccl);
-        printf("Acceleration in Z-Axis : %d \n", zAccl);
+        printf("Acceleration in X/Y/Z-Axis : %d %d %d \n", xAccl, yAccl, zAccl);
     }
+    }
+    return 0;
 }
 
