@@ -42,10 +42,12 @@ int tick( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
   input->tick(frames);
   // shifter.tick(frames);
 
-  for (unsigned int i = 0; i < frames.channels(); i++) {
+  /* for (unsigned int i = 0; i < frames.channels(); i++) {
   //   input->tick(frames, i);
     shifter.tick(frames, i);
-  }
+  } */
+
+  shifter.tick(frames, 0);
   
   for ( unsigned int i=0; i<frames.size(); i++ ) {
     *samples++ = frames[i];
