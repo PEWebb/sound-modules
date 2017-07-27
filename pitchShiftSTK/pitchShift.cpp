@@ -15,18 +15,19 @@
 
 #include "stk/FileWvIn.h"
 #include "stk/RtAudio.h"
-#include "stk/LentPitShift.h"
+#include "stk/PitShift.h"
 
 #include <signal.h>
 #include <iostream>
 #include <cstdlib>
+#include <cstdio>
 
 using namespace stk;
 
 // Eewww ... global variables! :-)
 bool done;
 StkFrames frames;
-LentPitShift shifter;
+PitShift shifter;
 static void finish(int ignore){ done = true; }
 
 // This tick() function handles sample computation only.  It will be
@@ -42,10 +43,10 @@ int tick( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
   input->tick(frames);
   // shifter.tick(frames);
 
-  /* for (unsigned int i = 0; i < frames.channels(); i++) {
+  for (unsigned int i = 0; i < frames.channels(); i++) {
   //   input->tick(frames, i);
     shifter.tick(frames, i);
-  } */
+  }
 
   shifter.tick(frames, 0);
   
@@ -89,10 +90,23 @@ int main(int argc, char *argv[])
   int channels = input.channelsOut();
 
   shifter.setShift(2.0);
+  shifter.setEffectMix(0.0);
 
   // Figure out how many bytes in an StkFloat and setup the RtAudio stream.
   RtAudio::StreamParameters parameters;
-  parameters.deviceId = dac.getDefaultOutputDevice();
+  // parameters.deviceId = dac.getDefaultOutputDevice();
+  parameters.deviceId = 2;
+
+  std::printf("Channels: %d \n", channels);
+  std::printf("Default output device: %d \n", parameters.deviceId);
+  std::printf("Number of audio devices: %d \n", dac.getDeviceCount());
+
+  for (unsigned int i = 0; i < dac.getDeviceCount(); i++) {
+      RtAudio::DeviceInfo info = dac.getDeviceInfo(i);
+      std::printf("Device: %d, Name: %s \n", i, info.name.c_str());
+  }
+
+
   parameters.nChannels = ( channels == 1 ) ? 2 : channels; //  Play mono files as stereo.
   RtAudioFormat format = ( sizeof(StkFloat) == 8 ) ? RTAUDIO_FLOAT64 : RTAUDIO_FLOAT32;
   unsigned int bufferFrames = RT_BUFFER_SIZE;
