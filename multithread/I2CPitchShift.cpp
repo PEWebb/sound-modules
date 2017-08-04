@@ -14,6 +14,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <mutex>
+#include <cmath>
 
 using namespace stk;
 
@@ -94,16 +95,19 @@ void i2cConnection()
 }
 
 void audioProcessing() {
+//    double prevShift = 0;
     for(;;) {
         i2cData.lock();
         double effectShift = (double)distortionFactor/1000+1;
         printf("Distortion Factor: %d, Scaled: %f \n", distortionFactor, effectShift);
-        
-        effectLock.lock();
-        shifter.setShift(effectShift);
-        effectLock.unlock();
-
         i2cData.unlock();
+
+//        if(abs(effectShift - prevShift) > 0) {
+//            prevShift = effectShift;
+            effectLock.lock();
+            shifter.setShift(effectShift);
+            effectLock.unlock();
+//        }
     }
 };
 
@@ -121,18 +125,18 @@ int tick( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
     
     effectLock.lock();
     for ( unsigned int i=0; i<frames.size(); i++ ) {
-      shiftSamples = shifter.tick(frames[i]);
-      *samples++ = shiftSamples;
-      if ( input->channelsOut() == 1 ) *samples++ = shiftSamples; // play mono files in stereo
+        shiftSamples = shifter.tick(frames[i]);
+        *samples++ = shiftSamples;
+        if ( input->channelsOut() == 1 ) *samples++ = shiftSamples; // play mono files in stereo
     }
     effectLock.unlock();
 
     if ( input->isFinished() ) {
-      done = true;
-      return 1;
+        done = true;
+        return 1;
     }
     else
-      return 0;
+        return 0;
 }
 
 void startMusic()
@@ -143,7 +147,7 @@ void startMusic()
 
     // Try to load the soundfile.
     try {
-      input.openFile("song.wav");
+      input.openFile("note.wav");
     }
     catch ( StkError & ) {
       exit( 1 );
@@ -163,6 +167,7 @@ void startMusic()
   
     effectLock.lock();
     shifter.setShift(1.0);
+    shifter.setEffectMix(1.0);
     effectLock.unlock();
 
     // Figure out how many bytes in an StkFloat and setup the RtAudio stream.
