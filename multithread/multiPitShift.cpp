@@ -1,6 +1,7 @@
-#include "stk/FileWvIn.h"
+#include "stk/FileLoop.h"
 #include "stk/RtAudio.h"
 #include "stk/PitShift.h"
+#include "stk/Echo.h"
 
 #include <iostream>
 #include <signal.h>
@@ -23,17 +24,21 @@ int distortionFactor;
 bool done;
 StkFrames frames;
 PitShift shifter;
+Echo echo;
 static void finish(int ignore){ done = true; }
 
 void audioProcessing() {
-    double factor = 1;
-    while(factor != -100)
+    double pFactor = 1, eFactor = 1;
+    while(pFactor > -100)
     {
-        std::cin >> factor;
+        std::cin >> pFactor >> eFactor;
         effectLock.lock();
-        shifter.setShift(factor);
+        shifter.setShift(pFactor);
+        echo.setDelay((unsigned long)(Stk::sampleRate() * eFactor));
+        echo.setEffectMix(eFactor);
         effectLock.unlock();
     }
+    std::terminate();
 };
 
 // This tick() function handles sample computation only.  It will be
@@ -42,7 +47,7 @@ void audioProcessing() {
 int tick( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
          double streamTime, RtAudioStreamStatus status, void *userData )
 {
-    FileWvIn *input = (FileWvIn *) userData;
+    FileLoop *input = (FileLoop *) userData;
     register StkFloat *samples = (StkFloat *) outputBuffer;
     register StkFloat shiftSamples;
 
@@ -51,17 +56,19 @@ int tick( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
     effectLock.lock();
     for ( unsigned int i=0; i<frames.size(); i++ ) {
       shiftSamples = shifter.tick(frames[i]);
+      shiftSamples = echo.tick(shiftSamples);
       *samples++ = shiftSamples;
       if ( input->channelsOut() == 1 ) *samples++ = shiftSamples; // play mono files in stereo
     }
     effectLock.unlock();
 
-    if ( input->isFinished() ) {
+    /*if ( input->isFinished() ) {
       done = true;
       return 1;
     }
     else
-      return 0;
+      return 0;*/
+    return 0;
 }
 
 void startMusic()
@@ -72,7 +79,7 @@ void startMusic()
 
     // Try to load the soundfile.
     try {
-      input.openFile("song.wav");
+      input.openFile("violinC.wav");
     }
     catch ( StkError & ) {
       exit( 1 );
@@ -92,6 +99,9 @@ void startMusic()
   
     effectLock.lock();
     shifter.setShift(1.0);
+    shifter.setEffectMix(1.0);
+
+    echo.setDelay((unsigned long)(Stk::sampleRate()));
     effectLock.unlock();
 
     // Figure out how many bytes in an StkFloat and setup the RtAudio stream.
