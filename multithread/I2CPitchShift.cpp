@@ -147,7 +147,7 @@ void startMusic()
 
     // Try to load the soundfile.
     try {
-      input.openFile("note.wav");
+      input.openFile("song.wav");
     }
     catch ( StkError & ) {
       exit( 1 );

@@ -79,7 +79,7 @@ void startMusic()
 
     // Try to load the soundfile.
     try {
-      input.openFile("violinC.wav");
+      input.openFile("note.wav");
     }
     catch ( StkError & ) {
       exit( 1 );

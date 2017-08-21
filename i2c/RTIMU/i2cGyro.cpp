@@ -75,9 +75,9 @@ int i2cConnection()
                 printf("Sample rate %d: %s\r", sampleRate, RTMath::displayDegrees("", imuData.fusionPose));
                 fflush(stdout);
 
-                double x = imuData.fusionPose.x() * RTMath::RTMATH_RAD_TO_DEGREE;
-                double y = imuData.fusionPose.y() * RTMath::RTMATH_RAD_TO_DEGREE;
-                double z = imuData.fusionPose.z() * RTMath::RTMATH_RAD_TO_DEGREE;
+                double x = imuData.fusionPose.x() * RTMATH_RAD_TO_DEGREE;
+                double y = imuData.fusionPose.y() * RTMATH_RAD_TO_DEGREE;
+                double z = imuData.fusionPose.z() * RTMATH_RAD_TO_DEGREE;
 
                 distortionFactor = x/30.0;
 
@@ -99,15 +99,15 @@ void audioProcessing() {
     for(;;) {
         i2cData.lock();
         double effectShift = distortionFactor+1;
-        printf("Distortion Factor: %d, Scaled: %f \n", distortionFactor, effectShift);
+        printf("Distortion Factor: %f, Scaled: %f \n", distortionFactor, effectShift);
         i2cData.unlock();
 
 //        if(abs(effectShift - prevShift) > 0) {
 //            prevShift = effectShift;
             effectLock.lock();
             shifter.setShift(effectShift);
-            echo.setDelay( (unsigned long) (Stk::sampleRate() * effectShift) );
-            echo.setEffectMix(effectShift);
+            //echo.setDelay( (unsigned long) (Stk::sampleRate() * effectShift) );
+            //echo.setEffectMix(effectShift);
             effectLock.unlock();
 //        }
     }
@@ -149,7 +149,7 @@ void startMusic()
 
     // Try to load the soundfile.
     try {
-      input.openFile("note.wav");
+      input.openFile("violinC.wav");
     }
     catch ( StkError & ) {
       exit( 1 );
